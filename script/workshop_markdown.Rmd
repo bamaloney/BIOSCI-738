@@ -1,0 +1,58 @@
+---
+title: "my_markdown_doc"
+author: "Ginny Potter"
+date: "2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r name}
+my_name <- "Ginny"
+my_name
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r rnorm, echo=FALSE}
+plot(rnorm(1:1000))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+## Messy Data: Workshop 1
+
+Load the `tidyverse` packages
+
+```{r tidyverse, message = FALSE}
+library(tidyverse)
+```
+
+Note that the `message = FALSE` parameter stops messages from `R` appearing in our document. 
+
+### DNA markers
+
+Data from [Identification and evaluation of age-correlated DNA methylation markers for forensic use](https://www.sciencedirect.com/science/article/pii/S1872497316300461?casa_token=qPk_jTQ4H5EAAAAA:Tu4wBtVyHzRAsB_7k3uIXsTqcsVucoVi7AvN54Evrue-Bw8CmK6CHraK0mjS-G4O7XF50V_cAI0)
+
+Read in the genomics data, remember this is set as a `.Rproj` so the path is **relative**
+
+```{r genomics}
+genomics <- read_csv("../data/dna_markers.csv")
+glimpse(genomics)
+```
+
+
+## YOUR TURN change \& add to this base document and submit for grading using git!
+
+## Your very exciting data?
