@@ -1,7 +1,7 @@
 ---
 title: "my_markdown_doc"
-author: "Ginny Potter"
-date: "2021"
+author: "Brianna Maloney"
+date: "semester_one_2021"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r name}
-my_name <- "Ginny"
+my_name <- "Brianna"
 my_name
 ```
 
@@ -31,28 +31,141 @@ plot(rnorm(1:1000))
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 
-## Messy Data: Workshop 1
+### Workshop 1: Messy Data
 
 Load the `tidyverse` packages
 
 ```{r tidyverse, message = FALSE}
 library(tidyverse)
+
 ```
 
 Note that the `message = FALSE` parameter stops messages from `R` appearing in our document. 
 
 ### DNA markers
-
 Data from [Identification and evaluation of age-correlated DNA methylation markers for forensic use](https://www.sciencedirect.com/science/article/pii/S1872497316300461?casa_token=qPk_jTQ4H5EAAAAA:Tu4wBtVyHzRAsB_7k3uIXsTqcsVucoVi7AvN54Evrue-Bw8CmK6CHraK0mjS-G4O7XF50V_cAI0)
 
 Read in the genomics data, remember this is set as a `.Rproj` so the path is **relative**
 
 ```{r genomics}
-genomics <- read_csv("../data/dna_markers.csv")
+genomics <- read.csv("~/Documents/data/BIOSCI-738/data/dna_markers.csv")
 glimpse(genomics)
+View(genomics)
+
 ```
 
 
-## YOUR TURN change \& add to this base document and submit for grading using git!
+## OUR TURN change \& add to this base document and submit for grading using git!
+additional data
+```{r very exciting data}
+dicots <- read.csv("~/Documents/data/BIOSCI-738/data/dicots.csv")
+rats <- read.csv("~/Documents/data/BIOSCI-738/data/crd_rats_data.csv")
 
-## Your very exciting data?
+View(dicots)   
+View(rats)
+
+```
+
+
+additional packages
+```{r packages, message = FALSE, echo=FALSE}
+#install packages if necessary, then load to library
+library(predictmeans)
+library(ggplot2)
+library(knitr)
+library(rmarkdown)
+```
+
+### Workshop 2 submission insructions
+# Now you have your R project set up I would like you to produce an informative plot (or plots) and a write a brief summary section explaining your data (or the dataset provided). You must write up your anlysis in the .Rmd file (edit/add to as necessary) ... You should ensure that this "knits" (to .html) as you'd expect; always a good check to do this a few times when writing up
+
+
+This week, we discussed the basics of multivariate analysis using the commands lm() and anova().
+There are a variaty of graphical options that display the full range of data more accurately than a basic bar plot.
+
+```{r summarizing treatment group response}
+## calculate mean response by treatment group
+rats %>%  group_by(Surgery) %>%  summarise(avg = mean(logAUC))
+
+```
+
+```{r linear model}
+## fit a linear model
+rats_lm <- lm(logAUC ~ Surgery, data = rats)
+
+```
+
+```{r anova}
+## carry out "one-way ANOVA"
+lm_anova <- anova(rats_lm)
+## print results (F-table)
+lm_anova
+
+## carry out "one-way ANOVA"
+rats_aov <- aov(logAUC ~ Surgery, data = rats)
+## print results (F-table)
+rats_aov
+```
+
+## Note that both methods provide the same result
+## but what about pairwise comparisons?
+```{r summary}
+## print out estimated coefficients & associated STDs and hypothesis results
+summary(rats_lm)$coef
+
+```
+
+
+```{r pairwise}
+## need to have surgery as a factor
+rats$Surgery <- as.factor(rats$Surgery)
+## calculate mean response by treatment group
+rats %>%  group_by(Surgery) %>%  summarise(avg_logAUC = mean(logAUC), avg_AUC = mean(AUC))
+
+
+####**** Using predictmeans****####
+library(predictmeans)
+
+## print out to console (by default also produces plot)
+predictmeans(rats_lm, modelterm = "Surgery",  pairwise = TRUE)
+
+```
+
+```{r comparing raw and transformed data}
+###*** Raw vs log AUC***###
+raw <- ggplot(data = rats, aes(x = Surgery, y = AUC)) +  geom_violin()
+log <- ggplot(data = rats, aes(x = Surgery, y = logAUC)) +  geom_violin()
+
+library(patchwork) ## nice package for combining ggplots
+raw | log ## see the difference!
+
+## fit a model to the raw data
+rats_lm_raw <- lm(AUC ~ Surgery, data = rats)
+anova(rats_lm_raw)
+
+## model diagnostic
+## will need to install the gglm package first
+gglm::gglm(rats_lm_raw)
+
+## in compared to the log one we started with
+gglm::gglm(rats_lm)
+
+```
+
+```{r adjusting for multiple comparisons}
+## Bonferroni vs Tukey
+# Tukey
+tukey <- predictmeans(rats_lm , modelterm = "Surgery", adj = "tukey", pairwise = TRUE)
+tukey
+# bonferrnoi
+bonferroni <- predictmeans(rats_lm , modelterm = "Surgery", adj = "bonferroni", pairwise = TRUE)
+bonferroni
+# Tukey's HSD
+TukeyHSD(aov(logAUC~Surgery, data = rats))
+
+```
+
+# Note to self:
+# To "grade" your work I will clone your repo and expect to be able to knit your .Rmd file as it sits within your project; make sure you've pushed everything so that I can do this. Remember, this means pushing the .Rmd file and all things it relies on (e.g., data, extra scripts) NOT the .html file you knit it to.
+
+
