@@ -48,9 +48,7 @@ Data from [Identification and evaluation of age-correlated DNA methylation marke
 Read in the genomics data, remember this is set as a `.Rproj` so the path is **relative**
 
 ```{r genomics}
-genomics <- read.csv("~/Documents/data/BIOSCI-738/data/dna_markers.csv")
-glimpse(genomics)
-View(genomics)
+
 
 ```
 
@@ -58,10 +56,7 @@ View(genomics)
 ## OUR TURN change \& add to this base document and submit for grading using git!
 additional data
 ```{r very exciting data}
-dicots <- read.csv("~/Documents/data/BIOSCI-738/data/dicots.csv")
-rats <- read.csv("~/Documents/data/BIOSCI-738/data/crd_rats_data.csv")
-
-View(dicots)   
+rats <- read.csv("~/Documents/data/BIOSCI-738/data/rats_crd_AUC.csv")
 View(rats)
 
 ```
@@ -128,7 +123,6 @@ library(predictmeans)
 
 ## print out to console (by default also produces plot)
 predictmeans(rats_lm, modelterm = "Surgery",  pairwise = TRUE)
-
 ```
 
 ```{r comparing raw and transformed data}
