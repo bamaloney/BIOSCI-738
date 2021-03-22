@@ -48,7 +48,8 @@ Data from [Identification and evaluation of age-correlated DNA methylation marke
 Read in the genomics data, remember this is set as a `.Rproj` so the path is **relative**
 
 ```{r genomics}
-
+genomics <- read.csv("~/Documents/data/BIOSCI-738/data/dna_markers.csv")
+glimpse(genomics)
 
 ```
 
@@ -57,7 +58,7 @@ Read in the genomics data, remember this is set as a `.Rproj` so the path is **r
 additional data
 ```{r very exciting data}
 rats <- read.csv("~/Documents/data/BIOSCI-738/data/rats_crd_AUC.csv")
-View(rats)
+glimpse(rats)
 
 ```
 
@@ -76,7 +77,7 @@ library(rmarkdown)
 
 
 This week, we discussed the basics of multivariate analysis using the commands lm() and anova().
-There are a variaty of graphical options that display the full range of data more accurately than a basic bar plot.
+There are a variety of graphical options that display the full range of data more accurately than a basic bar plot.
 
 ```{r summarizing treatment group response}
 ## calculate mean response by treatment group
@@ -87,23 +88,20 @@ rats %>%  group_by(Surgery) %>%  summarise(avg = mean(logAUC))
 ```{r linear model}
 ## fit a linear model
 rats_lm <- lm(logAUC ~ Surgery, data = rats)
+#print results
+rats_lm
 
 ```
 
 ```{r anova}
-## carry out "one-way ANOVA"
-lm_anova <- anova(rats_lm)
-## print results (F-table)
-lm_anova
-
 ## carry out "one-way ANOVA"
 rats_aov <- aov(logAUC ~ Surgery, data = rats)
 ## print results (F-table)
 rats_aov
 ```
 
-## Note that both methods provide the same result
-## but what about pairwise comparisons?
+## both methods provide the same results
+## what about pairwise comparisons?
 ```{r summary}
 ## print out estimated coefficients & associated STDs and hypothesis results
 summary(rats_lm)$coef
@@ -112,14 +110,13 @@ summary(rats_lm)$coef
 
 
 ```{r pairwise}
+####**** Using predictmeans****####
+library(predictmeans)
+
 ## need to have surgery as a factor
 rats$Surgery <- as.factor(rats$Surgery)
 ## calculate mean response by treatment group
 rats %>%  group_by(Surgery) %>%  summarise(avg_logAUC = mean(logAUC), avg_AUC = mean(AUC))
-
-
-####**** Using predictmeans****####
-library(predictmeans)
 
 ## print out to console (by default also produces plot)
 predictmeans(rats_lm, modelterm = "Surgery",  pairwise = TRUE)
@@ -136,15 +133,14 @@ raw | log ## see the difference!
 ## fit a model to the raw data
 rats_lm_raw <- lm(AUC ~ Surgery, data = rats)
 anova(rats_lm_raw)
-
-## model diagnostic
-## will need to install the gglm package first
-gglm::gglm(rats_lm_raw)
-
-## in compared to the log one we started with
-gglm::gglm(rats_lm)
-
 ```
+
+```{r model diagnostic raw vs transformed data}
+## will need to install the gglm package first
+gglm::gglm(rats_lm_raw) | gglm::gglm(rats_lm)
+```
+Here we compare how log transforming our data fixes the fit of our residuals vs. fitted and normal Q-Q plots.
+
 
 ```{r adjusting for multiple comparisons}
 ## Bonferroni vs Tukey
