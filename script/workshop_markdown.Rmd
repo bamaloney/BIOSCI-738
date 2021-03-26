@@ -1,5 +1,5 @@
 ---
-title: "workshop_markdown_doc"
+title: "workshop markdown document"
 author: "Brianna Maloney"
 date: "semester_one_2021"
 output: html_document
@@ -21,7 +21,7 @@ Note that the `message = FALSE` parameter stops messages from `R` appearing in o
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 necessary packages
-```{r packages, message = FALSE, echo=FALSE}
+```{r packages, message = FALSE}
 #install packages if necessary, then load to library
 library(predictmeans)
 library(ggplot2)
@@ -30,11 +30,11 @@ library(rmarkdown)
 ```
 
 
-#Workshop 3 
-##submission instructions
+# Workshop 3 
+## submission instructions
 >Now you have your repo set up I would like you to build on the plots you created last week and fit one or two linear models to the data, or equivalent if not possible. These are not binding, just an exploratory analysis. Based on the outputs draw inference as you see fit.
 
-This week in lecture, we discussed how we can adjust our models when conducting multiple comparisons 
+This week in lecture, we discussed how we can adjust our models when conducting multiple comparisons. 
 Let's first go back to our simple rat data from last week.
 ```{r adjusting for multiple comparisons}
 #refresh the memory with data and model
@@ -44,37 +44,155 @@ rats$Surgery <- as.factor(rats$Surgery)
 ## calculate mean response by treatment group
 rats %>%  group_by(Surgery) %>%  summarise(avg_logAUC = mean(logAUC), avg_AUC = mean(AUC))
 rats_lm <- lm(logAUC ~ Surgery, data = rats)
-```
 
+predictmeans(rats_lm, modelterm = "Surgery",  pairwise = TRUE)
+```
+The predictmeans() analysis shows us that the control and P surgeries are within the same group, and Surgery S is outside that limit (blue bar). 
+
+
+```{r plot}
+ggplot(data=rats, aes(x=Surgery, y=logAUC)) +
+  geom_dotplot(binwidth=0.5, binaxis="y", stackdir = "center") +
+  scale_fill_brewer(palette = "") +
+  labs(x= "Surgery", y="logAUC", title= "Rat Surgery")
+
+```
+Te difference is also noticable with a standard dotplot of the logAUC values.
+
+It's important to carry out at least one of these tests to get an idea for potential error. 
 ```{r multiple comparisons tests}
 ## Bonferroni vs Tukey
 
 # Tukey
 tukey <- predictmeans(rats_lm , modelterm = "Surgery", adj = "tukey", pairwise = TRUE)
-tukey
 # bonferrnoi
 bonferroni <- predictmeans(rats_lm , modelterm = "Surgery", adj = "bonferroni", pairwise = TRUE)
-bonferroni
+
+
+
 # Tukey's HSD
 TukeyHSD(aov(logAUC~Surgery, data = rats))
 
 ```
-One isn't necessarily better than the other, they all generally give the dame results. The important part is that you are wise enough to control the risk of testing multiple variables.
+One isn't necessarily better than the other, they all generally give the same results. The important part is that you are wise enough to control the risk of testing multiple variables.
+
+```{r some kind of graph}
+#if we compare the pairwise p-values 
+
+#predictmeans(PV.lm.1, modelterm = "Surgery", pairwise = TRUE, adj = "none")
+#predictmeans(rats_lm, modelterm = "Surgery", pairwise = TRUE, adj = "bonferroni")
+
+```
+
 
 Now let's look at a more complex data set, still looking at rats.
-```{r }
+```{r randomized control blocked design data}
+#evrey treatment occurs once each run
+# randomize order within and between runs
+library(lme4)
 rcbd <- read_csv("~/Documents/data/BIOSCI-738/data/rcbd.csv")
 rcbd$Run <- as.factor(rcbd$Run)
 rcbd$Rat <- as.factor(rcbd$Rat)
 head(rcbd)
+```
+
+####when fitting an RCBD model
+>response = systematic component(explanatory component + structural component) + error component
+
+In this example, explanatory component = surgery, strucural component = run, error component = rat, and the response = logAUC8.
+
+```{r model}
+## using lm
+lm_mod <- lm(logAUC8 ~ Run + Surgery, data = rcbd)
+summary(lm_mod)
+anova(lm_mod)
+## using aov
+aov_mod <- aov(logAUC8 ~ Surgery + Error(Run), data = rcbd)
+summary(aov_mod)
+#both versions give us the same numbers, but anova prints in a format that is easier to interpret.
+```
+So far lm() and anova() are the only models we have looked at. 
+Let's dig deeper now that we have multiple variables ()
+
+
+```{r fit linear mixed-effects models}
+## using lmer
+lmer_mod <- lmer(logAUC8 ~ Surgery + (1|Run), data = rcbd)
+summary(lmer_mod)
+anova(lmer_mod)
+```
+
+
+Factorial data
+```{r factorial data}
 
 dis_organ <- read_csv("~/Documents/data/BIOSCI-738/data/factorial_expt.csv")
 head(dis_organ)
+
+## change to factors (saves errors with predictmeans and as we saw before with lm)
+dis_organ$Disease <- as.factor(dis_organ$Disease)
+dis_organ$Organ <- as.factor(dis_organ$Organ)
+
+## shorthand version
+fac_lm <- lm(logAUC ~ Disease*Organ, data = dis_organ)
+
+## longhand version
+fac_lm_lh <- lm(logAUC ~ Disease + Organ +Disease:Organ, data = dis_organ)
+## both are the SAME
+
+cbind("short hand" = coef(fac_lm),"long hand" = coef(fac_lm_lh))
+
+## summary lm
+anova(fac_lm)
+```
+```{r plot ANOVA}
+ggplot(data=dis_organ, aes(x=Organ, y=logAUC, fill=Disease)) +
+  geom_dotplot(binwidth=0.15, binaxis="y", stackdir = "center") +
+  scale_fill_brewer(palette = "Reds") +
+  labs(title= "Disease Status and Organ Health on Rat logAUC")
+
+```
+
+
+The order that we list our variables in only matters if we have an unbalanced experiment design.
+```{r unbalanced design}
+## unequal replication
+## let's make our design unequal
+unbalanced <- dis_organ
+unbalanced$logAUC[c(1:3,10)] <- NA
+unbalanced_nafree <- unbalanced %>% drop_na()
+
+## order matters
+fac_lm <- lm(logAUC ~ Disease*Organ, data = unbalanced_nafree)
+anova(fac_lm)
+fac_lm_2 <- lm(logAUC ~ Organ*Disease, data = unbalanced_nafree)
+anova(fac_lm_2)
+
+```
+
+```{r balanced design}
+## balanced design so ordering doesn't matter
+fac_lm <- lm(logAUC ~ Disease*Organ, data = dis_organ)
+anova(fac_lm)
+
+fac_lm_2 <- lm(logAUC ~ Organ*Disease, data = dis_organ)
+anova(fac_lm_2)
+```
+
+```{r inference}
+predictmeans(fac_lm, modelterm = "Disease:Organ", pairwise = TRUE)
+
+
+#interaction$`Pairwise LSDs`
+
+#plot
+#print(interaction$predictmeansPlot)
+
 ```
 
 # Workshop 2
-#submission instructions
->Now you have your R project set up I would like you to produce an informative plot (or plots) and a write a brief summary section explaining your data (or the dataset provided). You must write up your anlysis in the .Rmd file (edit/add to as necessary) ... You should ensure that this "knits" (to .html) as you'd expect; always a good check to do this a few times when writing up.
+# submission instructions
+> Now you have your R project set up I would like you to produce an informative plot (or plots) and a write a brief summary section explaining your data (or the dataset provided). You must write up your anlysis in the .Rmd file (edit/add to as necessary) ... You should ensure that this "knits" (to .html) as you'd expect; always a good check to do this a few times when writing up.
 
 This week, we discussed the basics of multivariate analysis using the commands lm() and anova().
 There are a variety of graphical options that display the full range of data more accurately than a basic bar plot.
@@ -93,6 +211,7 @@ rats %>%  group_by(Surgery) %>%  summarise(avg = mean(logAUC))
 
 ```
 
+### both methods provide the same results
 ```{r linear model}
 ## fit a linear model
 rats_lm <- lm(logAUC ~ Surgery, data = rats)
@@ -108,9 +227,7 @@ rats_aov <- aov(logAUC ~ Surgery, data = rats)
 rats_aov
 ```
 
-### both methods provide the same results
-
-# what about pairwise comparisons?
+### what about pairwise comparisons?
 ```{r summary}
 ## print out estimated coefficients & associated STDs and hypothesis results
 summary(rats_lm)$coef
@@ -140,7 +257,9 @@ log <- ggplot(data = rats, aes(x = Surgery, y = logAUC)) +  geom_violin()
 
 library(patchwork) ## nice package for combining ggplots
 raw | log ## see the difference!
+```
 
+```{fit model, echo=FALSE}
 ## fit a model to the raw data
 rats_lm_raw <- lm(AUC ~ Surgery, data = rats)
 anova(rats_lm_raw)

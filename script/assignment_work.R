@@ -25,8 +25,7 @@ dicot %>% group_by(Treatment) %>% summarize(avg = mean(Total_natives))
 #refit anova model
 dicot_control_lm <- lm(Total_natives ~ Treatment, data = dicot)
 dicot_control_lm
-
-
+anova(dicot_control_lm)
 
 
   #1.4 
